@@ -45,7 +45,7 @@ export async function populateUnifierTemplate(
 
   // 2) Locate the "D" header row and map columns by header label
   let hdr = -1;
-  aoa.forEach((r, i) => {
+  aoa.forEach((r: unknown[], i: number) => {
     if (
       Array.isArray(r) &&
       String(r[0]).trim() === "D" &&

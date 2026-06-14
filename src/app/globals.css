@@ -1,0 +1,166 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 214 32% 97%;
+  --foreground: 218 44% 13%;
+  --card: 0 0% 100%;
+  --border: 215 24% 89%;
+  --muted: 214 30% 95%;
+  --muted-foreground: 216 14% 46%;
+  --ring: 218 44% 26%;
+}
+
+.dark {
+  --background: 222 47% 7%;
+  --foreground: 210 20% 96%;
+  --card: 222 40% 11%;
+  --border: 217 25% 20%;
+  --muted: 217 30% 15%;
+  --muted-foreground: 215 16% 65%;
+  --ring: 210 40% 70%;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Subtle engineering grid background */
+.eng-grid {
+  background-image:
+    linear-gradient(to right, rgba(91, 107, 130, 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(91, 107, 130, 0.07) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+.eng-grid-fine {
+  background-image:
+    linear-gradient(to right, rgba(91, 107, 130, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(91, 107, 130, 0.05) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.radial-fade {
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 35%, black 30%, transparent 80%);
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 35%, black 30%, transparent 80%);
+}
+
+/* Deep navy dark panel for hero / login (two-tone) */
+.dark-panel {
+  background:
+    radial-gradient(1100px 520px at 78% -10%, rgba(200, 16, 46, 0.18), transparent 60%),
+    radial-gradient(900px 600px at 8% 110%, rgba(60, 81, 116, 0.35), transparent 55%),
+    linear-gradient(160deg, #0c1424 0%, #0a1020 55%, #070d18 100%);
+}
+
+.dark-grid {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 46px 46px;
+}
+
+/* Thin top hairline accent */
+.accent-hairline {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(200, 16, 46, 0.7),
+    transparent
+  );
+}
+
+.text-gradient-light {
+  background: linear-gradient(180deg, #ffffff 0%, #c4d0e4 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ROWAD logo motif — diagonal brand bars, used as a subtle accent */
+.bars-motif {
+  background-image: repeating-linear-gradient(
+    122deg,
+    rgba(200, 16, 46, 0.55) 0,
+    rgba(200, 16, 46, 0.55) 5px,
+    transparent 5px,
+    transparent 14px
+  );
+}
+
+/* Premium skeleton shimmer */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background-color: hsl(var(--muted));
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.45),
+    transparent
+  );
+  animation: shimmer 1.6s infinite;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.4);
+  background-clip: content-box;
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: saturate(180%) blur(12px);
+}
+
+/* Chat markdown-ish prose tweaks */
+.prose-chat p {
+  margin: 0 0 0.75rem;
+  line-height: 1.7;
+}
+.prose-chat p:last-child {
+  margin-bottom: 0;
+}
+.prose-chat ul {
+  margin: 0 0 0.75rem;
+  padding-left: 1.2rem;
+  list-style: disc;
+}
+.prose-chat li {
+  margin-bottom: 0.25rem;
+}
+.prose-chat code {
+  font-family: ui-monospace, monospace;
+  font-size: 0.85em;
+  background: hsl(var(--muted));
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.3rem;
+}

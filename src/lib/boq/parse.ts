@@ -49,9 +49,6 @@ export function classify(sheet: string, desc: string): WorkPackageKey {
   return "civil";
 }
 
-const HEADER_DESC = ["description"];
-const HEADER_QTY = ["quantity", "qty"];
-
 export async function parseBoqWorkbook(buf: ArrayBuffer): Promise<BoqLineItem[]> {
   const XLSX = await import("xlsx");
   const wb = XLSX.read(buf, { cellFormula: false });
@@ -72,8 +69,8 @@ export async function parseBoqWorkbook(buf: ArrayBuffer): Promise<BoqLineItem[]>
     for (let i = 0; i < Math.min(aoa.length, 40); i++) {
       const r = (aoa[i] || []).map(norm);
       if (
-        r.some((c) => HEADER_DESC.includes(c)) &&
-        r.some((c) => HEADER_QTY.includes(c))
+        r.some((c) => c.includes("description")) &&
+        r.some((c) => c.includes("quantity") || c === "qty")
       ) {
         hdr = i;
         break;
@@ -82,19 +79,24 @@ export async function parseBoqWorkbook(buf: ArrayBuffer): Promise<BoqLineItem[]>
     if (hdr < 0) continue;
 
     const H = (aoa[hdr] || []).map(norm);
-    const idx = (names: string[]) => {
-      for (const n of names) {
-        const k = H.indexOf(n);
-        if (k >= 0) return k;
-      }
-      return -1;
-    };
-    const cDesc = idx(HEADER_DESC);
-    const cQty = idx(HEADER_QTY);
-    const cUnit = idx(["unit", "unit of measure", "uom"]);
-    const cRate = idx(["rate", "unit rate", "unit price", "rate sar"]);
-    const cAmt = idx(["amount", "amount sar", "total", "total amount"]);
-    const cItem = idx(["item", "item no", "code", "ref"]);
+    const find = (pred: (h: string) => boolean) => H.findIndex(pred);
+    const has = (h: string, ...subs: string[]) => subs.some((x) => h.includes(x));
+
+    const cDesc = find((h) => h.includes("description"));
+    const cQty = find((h) => h.includes("quantity") || h === "qty");
+    // rate / unit price (matches "rate", "rate (egp)", "unit rate", "unit price")
+    const cRate = find((h) => has(h, "rate", "unit price", "unit rate"));
+    // amount / total value (matches "amount", "amount (egp)", "total amount")
+    const cAmt = find(
+      (h) => h.includes("amount") || h === "total" || h.includes("total amount")
+    );
+    // unit of measure — must NOT grab "unit price" / "unit rate"
+    const cUnit = find(
+      (h) => h === "unit" || h === "uom" || h.includes("unit of measure")
+    );
+    const cItem = find(
+      (h) => h === "item" || h.includes("item no") || h === "code" || h === "ref"
+    );
 
     for (let i = hdr + 1; i < aoa.length; i++) {
       const row = aoa[i] || [];
@@ -103,7 +105,10 @@ export async function parseBoqWorkbook(buf: ArrayBuffer): Promise<BoqLineItem[]>
       if (!desc || q == null || q <= 0) continue; // a real measured line
 
       const description = String(desc).replace(/\s+/g, " ").trim();
-      const dupKey = sheet + "||" + norm(description);
+      // Occurrence is global (per normalized description, across the whole
+      // workbook) so matching is independent of sheet names — two revisions
+      // whose sheets are named differently still reconcile correctly.
+      const dupKey = norm(description);
       const occurrence = (seen.get(dupKey) ?? 0) + 1;
       seen.set(dupKey, occurrence);
 

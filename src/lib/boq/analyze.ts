@@ -34,8 +34,9 @@ const WP_META: Record<WorkPackageKey, { name: string; color: string }> = {
   landscape: { name: "Landscape", color: "#4b7a3f" },
 };
 
-const keyOf = (it: BoqLineItem) =>
-  `${it.sheet}||${it.code || norm(it.description)}||${it.occurrence}`;
+// Match key is sheet-independent: normalized description + global occurrence.
+// (Sheet names can differ between revisions, e.g. "BOQ Rev A" vs "BOQ Rev B".)
+const keyOf = (it: BoqLineItem) => `${norm(it.description)}#${it.occurrence}`;
 
 const lineValue = (it: BoqLineItem) =>
   it.amount != null && it.amount > 0

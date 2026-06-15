@@ -3,7 +3,12 @@
 import { useMemo, useState } from "react";
 import { Search, FileDown, ArrowRight, Sparkles } from "lucide-react";
 import { DarkCard, StatusBadge, DarkSelect } from "./ui";
-import { boqRows, workPackages, workPackageLabels } from "@/lib/boq-data";
+import {
+  boqRows as demoRows,
+  workPackages as demoWps,
+  workPackageLabels,
+} from "@/lib/boq-data";
+import { useBoqAnalysis } from "./analysis-context";
 import { exportCSV, exportExcel } from "@/lib/export";
 import type { BoqRow, DiffStatus } from "@/lib/boq-types";
 import { cn } from "@/lib/utils";
@@ -41,20 +46,23 @@ function diffLabel(r: BoqRow) {
 }
 
 export function Comparison() {
+  const analysis = useBoqAnalysis();
+  const allRows = analysis ? analysis.rows : demoRows;
+  const workPackages = analysis ? analysis.workPackages : demoWps;
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<string>("all");
   const [wp, setWp] = useState<string>("all");
 
   const rows = useMemo(
     () =>
-      boqRows.filter(
+      allRows.filter(
         (r) =>
           (status === "all" || r.status === status) &&
           (wp === "all" || r.workPackage === wp) &&
           (r.item.toLowerCase().includes(query.toLowerCase()) ||
             r.section.toLowerCase().includes(query.toLowerCase()))
       ),
-    [query, status, wp]
+    [allRows, query, status, wp]
   );
 
   const cols = [
@@ -72,9 +80,9 @@ export function Comparison() {
 
   const counts = useMemo(() => {
     const c: Record<string, number> = {};
-    boqRows.forEach((r) => (c[r.status] = (c[r.status] ?? 0) + 1));
+    allRows.forEach((r) => (c[r.status] = (c[r.status] ?? 0) + 1));
     return c;
-  }, []);
+  }, [allRows]);
 
   return (
     <div className="space-y-5">
@@ -84,8 +92,8 @@ export function Comparison() {
             BOQ Comparison Dashboard
           </h2>
           <p className="text-sm text-white/50">
-            Semantic line-item matching across Rev. A and Rev. B —{" "}
-            {boqRows.length} items reconciled.
+            Line-item matching across Rev. A and Rev. B —{" "}
+            {allRows.length} items reconciled.
           </p>
         </div>
         <div className="flex gap-2">
@@ -107,7 +115,7 @@ export function Comparison() {
       {/* status chips */}
       <div className="flex flex-wrap gap-2">
         <Chip active={status === "all"} onClick={() => setStatus("all")}>
-          All ({boqRows.length})
+          All ({allRows.length})
         </Chip>
         {STATUSES.filter((st) => counts[st]).map((st) => (
           <Chip key={st} active={status === st} onClick={() => setStatus(st)}>

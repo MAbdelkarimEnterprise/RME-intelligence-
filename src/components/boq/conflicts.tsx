@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { DarkCard, SeverityBadge, DarkSelect } from "./ui";
 import { conflicts, workPackages, workPackageLabels } from "@/lib/boq-data";
+import { useBoqAnalysis } from "./analysis-context";
 import { exportWord, exportPDF } from "@/lib/export";
 import type { Conflict, Severity } from "@/lib/boq-types";
 import { cn } from "@/lib/utils";
@@ -17,6 +18,7 @@ import { cn } from "@/lib/utils";
 const order: Record<Severity, number> = { High: 0, Medium: 1, Low: 2 };
 
 export function Conflicts() {
+  const analysis = useBoqAnalysis();
   const [sev, setSev] = useState<string>("all");
   const [wp, setWp] = useState<string>("all");
 
@@ -37,6 +39,27 @@ export function Conflicts() {
     conflicts.forEach((x) => (c[x.severity] += 1));
     return c;
   }, []);
+
+  // On a real run, spec-vs-BOQ conflict detection needs the Specifications
+  // PDF + Claude — wired in the next build step. Show an honest state.
+  if (analysis) {
+    return (
+      <div className="mx-auto max-w-xl py-16 text-center">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-white/5 text-amber-300">
+          <AlertTriangle className="h-6 w-6" />
+        </div>
+        <h2 className="mt-4 text-lg font-semibold text-white">
+          Specification conflict analysis
+        </h2>
+        <p className="mx-auto mt-2 max-w-md text-sm text-white/55">
+          Your BOQ numbers are live. To detect spec-vs-BOQ conflicts (e.g.
+          “spec requires C40 but BOQ says C35”), add a Specifications PDF on the
+          intake screen — the Claude-powered conflict reader is the next step
+          now that your API key is set.
+        </p>
+      </div>
+    );
+  }
 
   function reportHtml(items: Conflict[]) {
     return `<h1>Conflict Intelligence Report</h1>

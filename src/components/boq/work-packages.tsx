@@ -4,17 +4,22 @@ import { useState } from "react";
 import { ArrowLeft, FileText, AlertTriangle, Layers, ChevronRight } from "lucide-react";
 import { DarkCard, StatusBadge, SeverityBadge } from "./ui";
 import {
-  workPackages,
-  boqRows,
-  conflicts,
+  workPackages as demoWps,
+  boqRows as demoRows,
+  conflicts as demoConflicts,
 } from "@/lib/boq-data";
+import { useBoqAnalysis } from "./analysis-context";
 import type { WorkPackage } from "@/lib/boq-types";
 
 export function WorkPackagesView() {
+  const analysis = useBoqAnalysis();
+  const workPackages = analysis ? analysis.workPackages : demoWps;
+  const rows = analysis ? analysis.rows : demoRows;
+  const conflicts = analysis ? [] : demoConflicts;
   const [active, setActive] = useState<WorkPackage | null>(null);
 
   if (active) {
-    const items = boqRows.filter((r) => r.workPackage === active.key);
+    const items = rows.filter((r) => r.workPackage === active.key);
     const wpConflicts = conflicts.filter((c) => c.workPackage === active.key);
     return (
       <div className="space-y-5">

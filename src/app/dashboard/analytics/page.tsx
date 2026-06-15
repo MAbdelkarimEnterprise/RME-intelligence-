@@ -73,7 +73,7 @@ export default function AnalyticsPage() {
                 </span>
               </div>
               <div className="p-5">
-                <div className="flex h-48 items-end justify-between gap-3">
+                <div className="flex h-48 items-stretch justify-between gap-3">
                   {weekly.map((v, i) => (
                     <div key={i} className="flex flex-1 flex-col items-center gap-2">
                       <div className="flex w-full flex-1 items-end">

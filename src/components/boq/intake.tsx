@@ -11,51 +11,55 @@ import {
   Sparkles,
   Loader2,
   X,
+  AlertTriangle,
 } from "lucide-react";
 import { DarkCard } from "./ui";
 import { useDocumentsStore, makeDoc } from "@/components/app/documents-store";
 import { cn } from "@/lib/utils";
+import type { BoqAnalysis } from "@/lib/boq/analyze";
 
 const slots = [
   { key: "boqA", label: "BOQ Version A", icon: FileSpreadsheet, required: true, hint: "Baseline bill of quantities", accept: ".xlsx,.xls,.csv" },
   { key: "boqB", label: "BOQ Version B", icon: FileSpreadsheet, required: true, hint: "Revised bill of quantities", accept: ".xlsx,.xls,.csv" },
-  { key: "spec", label: "Project Specifications", icon: FileText, required: true, hint: "Technical specs (Vol. 1–3)", accept: ".pdf,.docx,.doc" },
+  { key: "spec", label: "Project Specifications", icon: FileText, required: false, hint: "Technical specs (PDF) — for conflict analysis", accept: ".pdf,.docx,.doc" },
   { key: "tender", label: "Tender Documents", icon: ScrollText, required: false, hint: "Conditions & scope of works", accept: ".pdf,.docx,.doc" },
   { key: "drawings", label: "Drawings", icon: PencilRuler, required: false, hint: "Optional — for reference", accept: ".pdf,.dwg,.png,.jpg" },
   { key: "more", label: "Additional files", icon: UploadCloud, required: false, hint: "Any extra reference documents", accept: "*" },
 ] as const;
 
 const STAGES = [
-  "Parsing documents (LangChain loaders)",
-  "Embedding BOQ line items & spec clauses",
-  "Semantic matching across BOQ A ↔ BOQ B",
-  "Cross-referencing specifications vs BOQ",
-  "Classifying items into work packages",
-  "Compiling executive report",
+  "Reading workbooks (SheetJS)",
+  "Extracting BOQ line items across all sheets",
+  "Matching items A ↔ B (code + description)",
+  "Computing quantity / rate / scope differences",
+  "Classifying into work packages",
+  "Compiling results",
 ];
 
-type Entry = { name: string; size: number; confirmed: boolean };
+type Entry = { file: File; confirmed: boolean };
 
-export function Intake({ onComplete }: { onComplete: () => void }) {
+export function Intake({
+  onComplete,
+}: {
+  onComplete: (analysis: BoqAnalysis) => void;
+}) {
   const [entries, setEntries] = useState<Record<string, Entry | undefined>>({});
   const [running, setRunning] = useState(false);
   const [stage, setStage] = useState(-1);
+  const [error, setError] = useState<string | null>(null);
   const { addDocument } = useDocumentsStore();
 
   const ready =
-    !!entries.boqA?.confirmed &&
-    !!entries.boqB?.confirmed &&
-    !!entries.spec?.confirmed;
+    !!entries.boqA?.confirmed && !!entries.boqB?.confirmed;
 
-  function setFile(key: string, name: string, size: number) {
-    setEntries((p) => ({ ...p, [key]: { name, size, confirmed: false } }));
+  function setFile(key: string, file: File) {
+    setEntries((p) => ({ ...p, [key]: { file, confirmed: false } }));
   }
   function confirm(key: string) {
     const e = entries[key];
     if (!e) return;
-    // Sync the confirmed upload into the Documents store.
     addDocument(
-      makeDoc(e.name, e.size, {
+      makeDoc(e.file.name, e.file.size, {
         projectId: "boq",
         projectName: "BOQ Intelligence",
       })
@@ -68,18 +72,39 @@ export function Intake({ onComplete }: { onComplete: () => void }) {
     setEntries((p) => ({ ...p, [key]: undefined }));
   }
 
-  function run() {
+  async function run() {
     setRunning(true);
     setStage(0);
-    let i = 0;
-    const t = setInterval(() => {
-      i += 1;
-      if (i >= STAGES.length) {
-        clearInterval(t);
-        setTimeout(onComplete, 500);
-      }
-      setStage(i);
-    }, 750);
+    setError(null);
+    try {
+      const fa = entries.boqA?.file;
+      const fb = entries.boqB?.file;
+      if (!fa || !fb) throw new Error("Both BOQ files are required.");
+
+      setStage(1);
+      const [bufA, bufB] = await Promise.all([fa.arrayBuffer(), fb.arrayBuffer()]);
+      const { parseBoqWorkbook } = await import("@/lib/boq/parse");
+      const [itemsA, itemsB] = await Promise.all([
+        parseBoqWorkbook(bufA),
+        parseBoqWorkbook(bufB),
+      ]);
+      if (itemsA.length === 0 && itemsB.length === 0)
+        throw new Error(
+          "No priced line items found. Check the files have Description + Quantity columns."
+        );
+
+      setStage(3);
+      const { analyzeBoq } = await import("@/lib/boq/analyze");
+      const analysis = analyzeBoq(itemsA, itemsB);
+
+      setStage(5);
+      await new Promise((r) => setTimeout(r, 400));
+      onComplete(analysis);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Analysis failed.");
+      setRunning(false);
+      setStage(-1);
+    }
   }
 
   return (
@@ -92,10 +117,9 @@ export function Intake({ onComplete }: { onComplete: () => void }) {
           BOQ &amp; Specification Intelligence
         </h2>
         <p className="mx-auto mt-2 max-w-xl text-sm text-white/55">
-          Drag &amp; drop the tender set. Each file shows a confirm button —
-          confirm to deploy it into the analysis. The engine compares BOQ
-          revisions, detects specification conflicts, and classifies every item
-          into work packages.
+          Drag &amp; drop two BOQ revisions. The engine reads every sheet,
+          extracts the real line items, and computes the actual quantity, rate
+          and scope differences — true numbers from your files.
         </p>
       </div>
 
@@ -103,28 +127,32 @@ export function Intake({ onComplete }: { onComplete: () => void }) {
         {slots.map((s) => (
           <Slot
             key={s.key}
-            slotKey={s.key}
             label={s.label}
             Icon={s.icon}
             required={s.required}
             hint={s.hint}
             accept={s.accept}
             entry={entries[s.key]}
-            onFile={(name, size) => setFile(s.key, name, size)}
+            onFile={(file) => setFile(s.key, file)}
             onConfirm={() => confirm(s.key)}
             onRemove={() => remove(s.key)}
           />
         ))}
       </div>
 
-      {/* Run / progress */}
       <DarkCard className="mt-6 p-5">
         {!running ? (
           <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
             <div className="text-sm text-white/60">
-              {ready
-                ? "All required documents deployed. Ready to analyze."
-                : "Drop & confirm BOQ A, BOQ B and Specifications to begin."}
+              {error ? (
+                <span className="flex items-center gap-2 text-red-300">
+                  <AlertTriangle className="h-4 w-4" /> {error}
+                </span>
+              ) : ready ? (
+                "Both BOQ revisions deployed. Ready to analyze."
+              ) : (
+                "Drop & confirm BOQ A and BOQ B to begin."
+              )}
             </div>
             <button
               onClick={run}
@@ -175,14 +203,13 @@ function Slot({
   onConfirm,
   onRemove,
 }: {
-  slotKey: string;
   label: string;
   Icon: typeof FileText;
   required: boolean;
   hint: string;
   accept: string;
   entry: Entry | undefined;
-  onFile: (name: string, size: number) => void;
+  onFile: (file: File) => void;
   onConfirm: () => void;
   onRemove: () => void;
 }) {
@@ -193,7 +220,7 @@ function Slot({
 
   function take(list: FileList | null) {
     const f = list?.[0];
-    if (f) onFile(f.name, f.size);
+    if (f) onFile(f);
   }
 
   return (
@@ -256,7 +283,7 @@ function Slot({
         {confirmed ? (
           <div className="mt-0.5 flex items-center gap-2">
             <span className="truncate text-xs text-emerald-300">
-              ✓ Deployed · {entry!.name}
+              ✓ Deployed · {entry!.file.name}
             </span>
             <button
               onClick={(e) => {
@@ -271,7 +298,7 @@ function Slot({
           </div>
         ) : pending ? (
           <div className="mt-1.5 space-y-1.5">
-            <div className="truncate text-xs text-white/70">{entry!.name}</div>
+            <div className="truncate text-xs text-white/70">{entry!.file.name}</div>
             <div className="flex items-center gap-2">
               <button
                 onClick={(e) => {

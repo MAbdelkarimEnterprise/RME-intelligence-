@@ -13,8 +13,10 @@ import { ExecSummary } from "./exec-summary";
 import { Comparison } from "./comparison";
 import { Conflicts } from "./conflicts";
 import { WorkPackagesView } from "./work-packages";
+import { BoqAnalysisContext } from "./analysis-context";
 import { execSummary } from "@/lib/boq-data";
 import { cn } from "@/lib/utils";
+import type { BoqAnalysis } from "@/lib/boq/analyze";
 
 type Tab = "summary" | "comparison" | "conflicts" | "packages";
 
@@ -27,9 +29,13 @@ const tabs: { key: Tab; label: string; icon: typeof Boxes; badge?: string }[] = 
 
 export function BoqWorkspace() {
   const [analyzed, setAnalyzed] = useState(false);
+  const [analysis, setAnalysis] = useState<BoqAnalysis | null>(null);
   const [tab, setTab] = useState<Tab>("summary");
 
+  const conflictCount = analysis ? 0 : execSummary.conflicts;
+
   return (
+    <BoqAnalysisContext.Provider value={analysis}>
     <div className="min-h-full bg-navy-900 text-white">
       {/* top bar */}
       <div className="sticky top-0 z-20 border-b border-white/10 bg-navy-900/90 backdrop-blur">
@@ -49,7 +55,11 @@ export function BoqWorkspace() {
           </div>
           {analyzed && (
             <button
-              onClick={() => setAnalyzed(false)}
+              onClick={() => {
+                setAnalyzed(false);
+                setAnalysis(null);
+                setTab("summary");
+              }}
               className="inline-flex items-center gap-1.5 rounded-md border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/70 hover:bg-white/10"
             >
               <RotateCcw className="h-3.5 w-3.5" /> New analysis
@@ -63,7 +73,7 @@ export function BoqWorkspace() {
             {tabs.map((t) => {
               const on = tab === t.key;
               const count =
-                t.key === "conflicts" ? execSummary.conflicts : undefined;
+                t.key === "conflicts" ? conflictCount : undefined;
               return (
                 <button
                   key={t.key}
@@ -93,7 +103,12 @@ export function BoqWorkspace() {
       {/* body */}
       <div className="px-6 py-7">
         {!analyzed ? (
-          <Intake onComplete={() => setAnalyzed(true)} />
+          <Intake
+            onComplete={(a) => {
+              setAnalysis(a);
+              setAnalyzed(true);
+            }}
+          />
         ) : (
           <div className="animate-fade-in">
             {tab === "summary" && (
@@ -110,5 +125,6 @@ export function BoqWorkspace() {
         )}
       </div>
     </div>
+    </BoqAnalysisContext.Provider>
   );
 }

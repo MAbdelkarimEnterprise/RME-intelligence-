@@ -13,51 +13,70 @@ import {
 import { DarkCard } from "./ui";
 import {
   execSummary,
-  workPackages,
-  conflicts,
+  workPackages as demoWps,
+  conflicts as demoConflicts,
   tenderProject,
   formatEGP,
 } from "@/lib/boq-data";
+import { useBoqAnalysis } from "./analysis-context";
 import { exportWord, exportPDF } from "@/lib/export";
 import { cn } from "@/lib/utils";
 
 export function ExecSummary({ onNavigate }: { onNavigate: (t: string) => void }) {
-  const s = execSummary;
+  const analysis = useBoqAnalysis();
+  const real = !!analysis;
+  const sum = analysis?.summary;
+
+  const s = {
+    valueA: sum?.valueA ?? execSummary.valueA,
+    valueB: sum?.valueB ?? execSummary.valueB,
+    valueDelta: sum?.valueDelta ?? execSummary.valueDelta,
+    added: sum?.added ?? execSummary.added,
+    removed: sum?.removed ?? execSummary.removed,
+    changed: sum?.changed ?? execSummary.changed,
+    priced: sum ? sum.priced : true,
+    conflicts: real ? 0 : execSummary.conflicts,
+    bySeverity: real
+      ? { High: 0, Medium: 0, Low: 0 }
+      : execSummary.bySeverity,
+  };
+  const wps = analysis ? analysis.workPackages : demoWps;
+  const conflictList = real ? [] : demoConflicts;
+  const projectLabel = real
+    ? "Uploaded BOQ revisions (A → B)"
+    : tenderProject.name;
   const up = s.valueDelta >= 0;
+  const valueText = s.priced
+    ? `${up ? "+" : ""}${formatEGP(s.valueDelta)}`
+    : "Unpriced";
 
   function reportHtml() {
     return `
       <h1>BOQ &amp; Specification Intelligence — Executive Report</h1>
-      <div class="sub">${tenderProject.name} · ${tenderProject.client}</div>
-      <h2>Commercial Summary</h2>
+      <div class="sub">${projectLabel}</div>
+      <h2>Summary</h2>
       <table>
         <tr><th>Metric</th><th>Value</th></tr>
-        <tr><td>BOQ A total value</td><td>${formatEGP(s.valueA)}</td></tr>
-        <tr><td>BOQ B total value</td><td>${formatEGP(s.valueB)}</td></tr>
-        <tr><td>Net change</td><td>${up ? "+" : ""}${formatEGP(s.valueDelta)}</td></tr>
+        <tr><td>BOQ A total value</td><td>${s.priced ? formatEGP(s.valueA) : "Unpriced"}</td></tr>
+        <tr><td>BOQ B total value</td><td>${s.priced ? formatEGP(s.valueB) : "Unpriced"}</td></tr>
+        <tr><td>Net change</td><td>${s.priced ? (up ? "+" : "") + formatEGP(s.valueDelta) : "—"}</td></tr>
         <tr><td>Items added / removed / changed</td><td>${s.added} / ${s.removed} / ${s.changed}</td></tr>
-        <tr><td>Conflicts (High / Medium / Low)</td><td>${s.bySeverity.High} / ${s.bySeverity.Medium} / ${s.bySeverity.Low}</td></tr>
       </table>
-      <h2>Top Conflicts</h2>
-      <table>
-        <tr><th>Severity</th><th>Type</th><th>Section</th><th>Issue</th></tr>
-        ${conflicts
-          .slice()
-          .sort((a, b) => (a.severity === "High" ? -1 : 1))
-          .map(
-            (c) =>
-              `<tr><td>${c.severity}</td><td>${c.type}</td><td>${c.section}</td><td>${c.description}</td></tr>`
-          )
-          .join("")}
-      </table>
+      ${
+        conflictList.length
+          ? `<h2>Top Conflicts</h2><table><tr><th>Severity</th><th>Type</th><th>Section</th><th>Issue</th></tr>${conflictList
+              .map(
+                (c) =>
+                  `<tr><td>${c.severity}</td><td>${c.type}</td><td>${c.section}</td><td>${c.description}</td></tr>`
+              )
+              .join("")}</table>`
+          : ""
+      }
       <h2>Work Package Breakdown</h2>
       <table>
-        <tr><th>Package</th><th>BOQ Items</th><th>Spec Sections</th><th>Conflicts</th></tr>
-        ${workPackages
-          .map(
-            (w) =>
-              `<tr><td>${w.name}</td><td>${w.boqItems}</td><td>${w.specSections}</td><td>${w.conflicts}</td></tr>`
-          )
+        <tr><th>Package</th><th>BOQ Items</th></tr>
+        ${wps
+          .map((w) => `<tr><td>${w.name}</td><td>${w.boqItems}</td></tr>`)
           .join("")}
       </table>`;
   }
@@ -65,15 +84,17 @@ export function ExecSummary({ onNavigate }: { onNavigate: (t: string) => void })
   const kpis = [
     {
       label: "Net commercial change",
-      value: `${up ? "+" : ""}${formatEGP(s.valueDelta)}`,
-      sub: `${formatEGP(s.valueA)} → ${formatEGP(s.valueB)}`,
+      value: valueText,
+      sub: s.priced
+        ? `${formatEGP(s.valueA)} → ${formatEGP(s.valueB)}`
+        : "Rates blank in source files",
       icon: up ? TrendingUp : TrendingDown,
-      tone: up ? "text-emerald-300" : "text-red-300",
+      tone: s.priced ? (up ? "text-emerald-300" : "text-red-300") : "text-white/50",
     },
     {
       label: "Items added",
       value: s.added,
-      sub: "New scope in Rev. B",
+      sub: "New in Rev. B",
       icon: PlusCircle,
       tone: "text-emerald-300",
     },
@@ -87,7 +108,7 @@ export function ExecSummary({ onNavigate }: { onNavigate: (t: string) => void })
     {
       label: "Items changed",
       value: s.changed,
-      sub: "Qty / rate / unit / scope",
+      sub: "Qty / rate / unit",
       icon: PencilLine,
       tone: "text-sky-300",
     },
@@ -101,7 +122,7 @@ export function ExecSummary({ onNavigate }: { onNavigate: (t: string) => void })
           <h2 className="text-xl font-bold tracking-tight text-white">
             Executive Summary
           </h2>
-          <p className="text-sm text-white/50">{tenderProject.name}</p>
+          <p className="text-sm text-white/50">{projectLabel}</p>
         </div>
         <div className="flex gap-2">
           <button
@@ -144,7 +165,7 @@ export function ExecSummary({ onNavigate }: { onNavigate: (t: string) => void })
             {([["High", "bg-accent"], ["Medium", "bg-amber-400"], ["Low", "bg-emerald-400"]] as const).map(
               ([sev, color]) => {
                 const count = s.bySeverity[sev];
-                const pct = (count / s.conflicts) * 100;
+                const pct = s.conflicts ? (count / s.conflicts) * 100 : 0;
                 return (
                   <div key={sev}>
                     <div className="mb-1 flex justify-between text-xs">
@@ -159,12 +180,19 @@ export function ExecSummary({ onNavigate }: { onNavigate: (t: string) => void })
               }
             )}
           </div>
-          <button
-            onClick={() => onNavigate("conflicts")}
-            className="mt-4 text-xs font-medium text-accent hover:text-red-300"
-          >
-            View all {s.conflicts} conflicts →
-          </button>
+          {real && s.conflicts === 0 ? (
+            <p className="mt-4 text-xs text-white/45">
+              Add a Specifications PDF and connect Claude to auto-detect
+              spec-vs-BOQ conflicts.
+            </p>
+          ) : (
+            <button
+              onClick={() => onNavigate("conflicts")}
+              className="mt-4 text-xs font-medium text-accent hover:text-red-300"
+            >
+              View all {s.conflicts} conflicts →
+            </button>
+          )}
         </DarkCard>
 
         {/* Work package mix */}
@@ -176,8 +204,8 @@ export function ExecSummary({ onNavigate }: { onNavigate: (t: string) => void })
             <Boxes className="h-4 w-4 text-white/40" />
           </div>
           <div className="mt-4 space-y-2.5">
-            {workPackages.map((w) => {
-              const max = Math.max(...workPackages.map((x) => x.boqItems));
+            {wps.map((w) => {
+              const max = Math.max(...wps.map((x) => x.boqItems), 1);
               return (
                 <button
                   key={w.key}
@@ -186,9 +214,7 @@ export function ExecSummary({ onNavigate }: { onNavigate: (t: string) => void })
                 >
                   <div className="mb-1 flex justify-between text-xs">
                     <span className="font-medium text-white/80">{w.name}</span>
-                    <span className="text-white/45">
-                      {w.boqItems} items · {w.specSections} specs
-                    </span>
+                    <span className="text-white/45">{w.boqItems} items</span>
                   </div>
                   <div className="h-2 overflow-hidden rounded-full bg-white/10">
                     <div

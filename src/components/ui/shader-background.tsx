@@ -137,9 +137,9 @@ const ShaderBackground = () => {
   if (!shaderProgram) return null;
     gl.attachShader(shaderProgram, vertexShader!);
     gl.attachShader(shaderProgram, fragmentShader!);
-    gl.linkProgram(shaderProgram);
+    gl.linkProgram(shaderProgram!);
 
-    if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+    if (!gl.getProgramParameter(shaderProgram!, gl.LINK_STATUS)) {
       console.error('Shader program link error: ', gl.getProgramInfoLog(shaderProgram));
       return null;
     }
@@ -171,11 +171,11 @@ const ShaderBackground = () => {
     const programInfo = {
       program: shaderProgram,
       attribLocations: {
-        vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
+        vertexPosition: gl.getAttribLocation(shaderProgram!, 'aVertexPosition'),
       },
       uniformLocations: {
-        resolution: gl.getUniformLocation(shaderProgram, 'iResolution'),
-        time: gl.getUniformLocation(shaderProgram, 'iTime'),
+        resolution: gl.getUniformLocation(shaderProgram!, 'iResolution'),
+        time: gl.getUniformLocation(shaderProgram!, 'iTime'),
       },
     };
 

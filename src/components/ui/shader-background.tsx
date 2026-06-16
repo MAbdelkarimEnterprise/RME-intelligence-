@@ -134,8 +134,9 @@ const ShaderBackground = () => {
     const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fsSource);
 
     const shaderProgram = gl.createProgram();
-    gl.attachShader(shaderProgram, vertexShader);
-    gl.attachShader(shaderProgram, fragmentShader);
+  if (!shaderProgram) return null;
+    gl.attachShader(shaderProgram, vertexShader!);
+    gl.attachShader(shaderProgram, fragmentShader!);
     gl.linkProgram(shaderProgram);
 
     if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {

@@ -114,6 +114,8 @@ const ShaderBackground = () => {
   // Helper function to compile shader
   const loadShader = (gl: WebGLRenderingContext, type: number, source: string) => {
     const shader = gl.createShader(type);
+  if (!shader) return null;
+  if (!shader) return null;
     gl.shaderSource(shader, source);
     gl.compileShader(shader);
 

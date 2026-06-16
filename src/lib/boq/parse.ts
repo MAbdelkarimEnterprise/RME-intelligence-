@@ -37,6 +37,21 @@ function toNum(v: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+/** Map an explicit BOQ "Work Package" cell value to a known key. */
+export function wpFromLabel(label: string): WorkPackageKey | null {
+  const l = label.toLowerCase();
+  if (!l.trim()) return null;
+  // NOTE: check "infra" before "struct" — "infraSTRUCTure" contains "struct".
+  if (l.includes("infra")) return "infrastructure";
+  if (l.includes("architect")) return "architectural";
+  if (l.includes("struct")) return "structural";
+  if (l.includes("mech") || l.includes("mep") || l.includes("plumb") || l.includes("hvac")) return "mechanical";
+  if (l.includes("elec")) return "electrical";
+  if (l.includes("landscape")) return "landscape";
+  if (l.includes("civil")) return "civil";
+  return null;
+}
+
 /** Classify a sheet/description into a work package by keyword. */
 export function classify(sheet: string, desc: string): WorkPackageKey {
   const s = (sheet + " " + desc).toLowerCase();
@@ -97,6 +112,13 @@ export async function parseBoqWorkbook(buf: ArrayBuffer): Promise<BoqLineItem[]>
     const cItem = find(
       (h) => h === "item" || h.includes("item no") || h === "code" || h === "ref"
     );
+    // Respect an explicit Work Package / Trade / Discipline column if present.
+    const cWP = find(
+      (h) =>
+        h.includes("work package") ||
+        h.includes("trade") ||
+        h.includes("discipline")
+    );
 
     for (let i = hdr + 1; i < aoa.length; i++) {
       const row = aoa[i] || [];
@@ -121,7 +143,9 @@ export async function parseBoqWorkbook(buf: ArrayBuffer): Promise<BoqLineItem[]>
         rate: cRate >= 0 ? toNum(row[cRate]) : null,
         amount: cAmt >= 0 ? toNum(row[cAmt]) : null,
         occurrence,
-        workPackage: classify(sheet, description),
+        workPackage:
+          (cWP >= 0 ? wpFromLabel(String(row[cWP] ?? "")) : null) ??
+          classify(sheet, description),
       });
     }
   }

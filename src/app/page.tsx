@@ -9,6 +9,7 @@ import {
   Network,
 } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
+import ShaderBackground from "@/components/ui/shader-background";
 import { Button } from "@/components/ui/button";
 
 const capabilities = [
@@ -56,7 +57,7 @@ const trustedSystems = [
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-navy-900 text-white">
+    <div className="min-h-screen bg-black text-white">
       {/* Nav */}
       <header className="sticky top-0 z-40 border-b border-white/10 bg-navy-900/80 backdrop-blur-xl">
         <div className="container flex h-16 items-center justify-between">
@@ -92,24 +93,26 @@ export default function LandingPage() {
       </header>
 
       {/* Hero */}
-      <section className="relative overflow-hidden dark-panel">
-        <div className="absolute inset-0 dark-grid radial-fade opacity-70" />
+      <section className="relative min-h-screen overflow-hidden">
+        <ShaderBackground />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/50" />
         <div className="absolute inset-x-0 top-0 h-px accent-hairline" />
-        <div className="container relative py-24 md:py-36">
+        <div className="container relative z-10 py-24 md:py-36">
           <div className="mx-auto max-w-3xl text-center animate-fade-in">
             <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 text-xs font-medium text-white/70">
               <span className="h-1.5 w-1.5 rounded-full bg-accent shadow-[0_0_8px_2px_rgba(225,29,60,0.7)]" />
               Engineering Intelligence Platform · Internal
             </div>
             <h1 className="text-balance text-4xl font-bold leading-[1.05] tracking-tight md:text-6xl">
-              <span className="text-gradient-light">Engineering Knowledge.</span>
-              <br />
-              <span className="text-accent-glow">Instantly Accessible.</span>
+              <span className="text-gradient-light">RME Intelligence</span>
             </h1>
-            <p className="mx-auto mt-6 max-w-xl text-balance text-lg leading-relaxed text-white/65">
-              Upload documents, analyze projects, and interact with
-              organizational knowledge through AI — purpose-built for ROWAD
-              Modern Engineering.
+            <p className="mt-4 text-lg font-semibold tracking-wide text-accent-glow">
+              AI-Powered Construction Intelligence Platform
+            </p>
+            <p className="mx-auto mt-5 max-w-xl text-balance text-lg leading-relaxed text-white/65">
+              Analyze BOQs, compare specifications, automate payment
+              applications, and prepare Oracle Unifier-ready deliverables from
+              one workspace.
             </p>
             <div className="mt-10 flex items-center justify-center gap-3">
               <Link href="/login">

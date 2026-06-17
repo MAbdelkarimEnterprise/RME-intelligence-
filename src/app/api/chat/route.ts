@@ -68,7 +68,7 @@ export async function POST(req: Request) {
       context = blocks.join("\n\n");
       citations = documents
         .filter((d) => d.text)
-        .map((d) => ({ documentId: d.name, documentName: d.name, snippet: "" }));
+        .map((d) => ({ documentId: d.name, documentName: d.name, page: undefined, snippet: "" }));
       confidence = blocks.length ? 0.9 : 0;
     }
 

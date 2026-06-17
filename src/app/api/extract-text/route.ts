@@ -56,10 +56,10 @@ export async function POST(req: Request) {
         messages: [
           {
             role: "user",
-            content: [
+            content: ([
               { type: "document", source: { type: "base64", media_type: "application/pdf", data: base64 } },
               { type: "text", text: "Transcribe this document to clean plain text. Preserve headings, tables (as readable rows), figures and section numbers. Translate Arabic to English inline where helpful. Output only the transcribed text." },
-            ],
+            ]) as any,
           },
         ],
       });

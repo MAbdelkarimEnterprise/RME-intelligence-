@@ -67,7 +67,7 @@ export async function POST(req: Request) {
       messages: [
         {
           role: "user",
-          content: [
+          content: ([
             {
               type: "document",
               source: {
@@ -77,7 +77,7 @@ export async function POST(req: Request) {
               },
             },
             { type: "text", text: EXTRACT_PROMPT },
-          ],
+          ]) as any,
         },
       ],
     });

@@ -75,10 +75,10 @@ export async function POST(req: Request) {
       messages: [
         {
           role: "user",
-          content: [
+          content: ([
             { type: "document", source: { type: "base64", media_type: "application/pdf", data: base64 } },
             { type: "text", text: PROMPT(boqJson) },
-          ],
+          ]) as any,
         },
       ],
     });

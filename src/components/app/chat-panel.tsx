@@ -10,6 +10,7 @@ import {
   User as UserIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useDocumentsStore } from "@/components/app/documents-store";
 import type { ChatMessage } from "@/lib/types";
 
 const STARTERS = [
@@ -34,6 +35,7 @@ export function ChatPanel({
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+  const { docs } = useDocumentsStore();
 
   async function send(text: string) {
     const content = text.trim();
@@ -59,6 +61,10 @@ export function ChatPanel({
             role: m.role,
             content: m.content,
           })),
+          documents: docs
+            .filter((d) => d.text)
+            .slice(0, 12)
+            .map((d) => ({ name: d.name, text: d.text as string })),
         }),
       });
       const data = await res.json();

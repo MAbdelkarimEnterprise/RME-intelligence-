@@ -24,6 +24,7 @@ export interface ExtractedItem {
   currentQuantity: number; // quantity completed this period
   workCompletedPct: number; // overall % complete
   paymentPct: number; // payment %
+  currentAmount?: number; // certified amount this period (currency), if present
   weightsRaw?: string; // e.g. "50% Formwork 20% Reinforcement 20% Fixing 10% Pouring"
 }
 

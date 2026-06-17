@@ -17,6 +17,7 @@ import { DarkCard } from "./ui";
 import { useDocumentsStore, makeDoc } from "@/components/app/documents-store";
 import { cn } from "@/lib/utils";
 import type { BoqAnalysis } from "@/lib/boq/analyze";
+import type { Conflict } from "@/lib/boq-types";
 
 const slots = [
   { key: "boqA", label: "BOQ Version A", icon: FileSpreadsheet, required: true, hint: "Baseline bill of quantities", accept: ".xlsx,.xls,.csv" },
@@ -41,7 +42,7 @@ type Entry = { file: File; confirmed: boolean };
 export function Intake({
   onComplete,
 }: {
-  onComplete: (analysis: BoqAnalysis) => void;
+  onComplete: (analysis: BoqAnalysis, conflicts: Conflict[] | null) => void;
 }) {
   const [entries, setEntries] = useState<Record<string, Entry | undefined>>({});
   const [running, setRunning] = useState(false);
@@ -97,9 +98,37 @@ export function Intake({
       const { analyzeBoq } = await import("@/lib/boq/analyze");
       const analysis = analyzeBoq(itemsA, itemsB);
 
+      // Spec-vs-BOQ conflict detection (Claude) when a Specifications PDF
+      // is supplied. Falls back to null (honest empty state) on no key/error.
+      let conflicts: Conflict[] | null = null;
+      const specFile = entries.spec?.file;
+      if (specFile && /\.pdf$/i.test(specFile.name)) {
+        setStage(4);
+        try {
+          const boqPayload = JSON.stringify(
+            analysis.rows.slice(0, 400).map((r) => ({
+              ref: r.item,
+              section: r.section,
+              unit: r.unit,
+              workPackage: r.workPackage,
+            }))
+          );
+          const fd = new FormData();
+          fd.append("file", specFile, specFile.name);
+          fd.append("boq", boqPayload);
+          const res = await fetch("/api/boq/conflicts", { method: "POST", body: fd });
+          const data = await res.json();
+          if (data?.ok && Array.isArray(data.conflicts)) {
+            conflicts = data.conflicts as Conflict[];
+          }
+        } catch {
+          conflicts = null;
+        }
+      }
+
       setStage(5);
       await new Promise((r) => setTimeout(r, 400));
-      onComplete(analysis);
+      onComplete(analysis, conflicts);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Analysis failed.");
       setRunning(false);

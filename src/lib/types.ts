@@ -34,6 +34,8 @@ export interface DocumentItem {
   uploadedBy: string;
   status: DocStatus;
   pages?: number;
+  /** Extracted plain text — used to ground the AI Assistant. */
+  text?: string;
 }
 
 export interface Citation {

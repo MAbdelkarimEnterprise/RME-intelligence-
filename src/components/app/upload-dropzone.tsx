@@ -14,6 +14,7 @@ type Uploading = {
   type: FileType;
   progress: number;
   done: boolean;
+  file: File;
 };
 
 const ACCEPTED = ".pdf,.docx,.xlsx,.pptx,.txt";
@@ -30,10 +31,13 @@ function extToType(name: string): FileType {
 export function UploadDropzone({
   defaultProject,
   onConfirm,
+  onText,
 }: {
   defaultProject?: string;
   /** Called when the user confirms an uploaded file should be added. */
   onConfirm?: (doc: DocumentItem) => void;
+  /** Called once document text has been extracted (for AI grounding). */
+  onText?: (id: string, text: string) => void;
 }) {
   const [drag, setDrag] = useState(false);
   const [files, setFiles] = useState<Uploading[]>([]);
@@ -54,6 +58,21 @@ export function UploadDropzone({
       status: "ready",
     });
     setFiles((prev) => prev.filter((x) => x.id !== f.id));
+
+    // Extract text in the background so the AI Assistant + Knowledge Base
+    // can ground answers in this document's real content.
+    if (onText) {
+      const fd = new FormData();
+      fd.append("file", f.file, f.name);
+      fetch("/api/extract-text", { method: "POST", body: fd })
+        .then((r) => r.json())
+        .then((d) => {
+          if (d?.ok && typeof d.text === "string" && d.text.trim()) {
+            onText(f.id, d.text);
+          }
+        })
+        .catch(() => {});
+    }
   }
 
   const addFiles = useCallback((list: FileList | null) => {
@@ -65,6 +84,7 @@ export function UploadDropzone({
       type: extToType(f.name),
       progress: 0,
       done: false,
+      file: f,
     }));
     setFiles((prev) => [...next, ...prev]);
 

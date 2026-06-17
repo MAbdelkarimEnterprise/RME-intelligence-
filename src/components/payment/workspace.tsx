@@ -26,7 +26,9 @@ import {
   matchItems,
   validate,
   confidenceTone,
+  parseWeights,
   type MatchResult,
+  type ExtractedItem,
 } from "@/lib/payment/engine";
 import { templateItems, extractedItems, projectMeta } from "@/lib/payment/data";
 import {
@@ -44,6 +46,26 @@ const STAGES = [
   { label: "Writing Unifier invoice + reports", icon: FileCheck2 },
 ];
 
+// Each extracted certificate item becomes a populate-ready row (the built-in
+// Unifier template is blank, so we write the extracted items straight in).
+function toMatch(e: ExtractedItem): MatchResult {
+  return {
+    template: {
+      ref: e.ref,
+      code: e.code || "",
+      boqDescription: e.description,
+      unit: e.unit || "",
+      itemQuantity: e.currentQuantity,
+      unitCost: 0,
+    },
+    extracted: e,
+    level: "Semantic AI Match",
+    confidence: 92,
+    weights: parseWeights(e.weightsRaw),
+    note: "Extracted from certificate",
+  };
+}
+
 type Tab = "matched" | "unmatchedPdf" | "unmatchedExcel" | "warnings";
 
 export function PaymentWorkspace() {
@@ -52,6 +74,8 @@ export function PaymentWorkspace() {
   const [stage, setStage] = useState(-1);
   const [tab, setTab] = useState<Tab>("matched");
   const [cert1, setCert1] = useState<File | null>(null);
+  const [extractedReal, setExtractedReal] = useState<ExtractedItem[] | null>(null);
+  const [note, setNote] = useState<string | null>(null);
   const { addDocument } = useDocumentsStore();
 
   function handleCert(f: File | null) {
@@ -63,7 +87,16 @@ export function PaymentWorkspace() {
   }
 
   const result = useMemo(() => {
-    const { matches, unmatchedExtracted } = matchItems(templateItems, extractedItems);
+    let matches: MatchResult[];
+    let unmatchedExtracted: ExtractedItem[];
+    if (extractedReal && extractedReal.length) {
+      matches = extractedReal.map(toMatch);
+      unmatchedExtracted = [];
+    } else {
+      const r = matchItems(templateItems, extractedItems);
+      matches = r.matches;
+      unmatchedExtracted = r.unmatchedExtracted;
+    }
     const issues = validate(matches, unmatchedExtracted);
     const matched = matches.filter((m) => m.level !== "Unmatched");
     const unmatchedExcel = matches.filter((m) => m.level === "Unmatched");
@@ -81,23 +114,43 @@ export function PaymentWorkspace() {
       avgConf,
       weightsDetected,
     };
-  }, []);
+  }, [extractedReal]);
 
-  function run() {
+  async function run() {
     setRunning(true);
     setStage(0);
-    let i = 0;
-    const t = setInterval(() => {
-      i += 1;
-      if (i >= STAGES.length) {
-        clearInterval(t);
-        setTimeout(() => {
-          setRunning(false);
-          setDone(true);
-        }, 500);
+    setNote(null);
+    const anim = setInterval(
+      () => setStage((s) => Math.min(s + 1, STAGES.length - 1)),
+      700
+    );
+    let items: ExtractedItem[] | null = null;
+    let msg: string | null = null;
+    try {
+      if (cert1) {
+        const fd = new FormData();
+        fd.append("file", cert1);
+        const res = await fetch("/api/ipc/extract", { method: "POST", body: fd });
+        const data = await res.json();
+        if (data.ok && Array.isArray(data.items) && data.items.length) {
+          items = data.items as ExtractedItem[];
+          msg = `Extracted ${items.length} line items from the certificate via Claude.`;
+        } else if (data.reason === "no-key") {
+          msg =
+            "No ANTHROPIC_API_KEY set — showing sample data. Add the key to extract from the certificate.";
+        } else {
+          msg = "Couldn't read the certificate — showing sample data.";
+        }
       }
-      setStage(i);
-    }, 720);
+    } catch {
+      msg = "Extraction request failed — showing sample data.";
+    }
+    clearInterval(anim);
+    setStage(STAGES.length);
+    setExtractedReal(items);
+    setNote(msg);
+    setRunning(false);
+    setDone(true);
   }
 
   return (
@@ -123,6 +176,8 @@ export function PaymentWorkspace() {
               onClick={() => {
                 setDone(false);
                 setStage(-1);
+                setExtractedReal(null);
+                setNote(null);
               }}
               className="inline-flex items-center gap-1.5 rounded-md border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/70 hover:bg-white/10"
             >
@@ -146,6 +201,7 @@ export function PaymentWorkspace() {
             result={result}
             tab={tab}
             setTab={setTab}
+            note={note}
           />
         )}
       </div>
@@ -359,10 +415,12 @@ function Results({
   result,
   tab,
   setTab,
+  note,
 }: {
   result: ReturnType<typeof resultShape>;
   tab: Tab;
   setTab: (t: Tab) => void;
+  note: string | null;
 }) {
   const { matches, matched, unmatchedExcel, unmatchedExtracted, issues, avgConf, weightsDetected } =
     result;
@@ -385,6 +443,7 @@ function Results({
           <p className="text-sm text-white/50">
             {projectMeta.contract} · {projectMeta.project} · {projectMeta.ipcNo}
           </p>
+          {note && <p className="mt-1 text-xs text-amber-300/90">{note}</p>}
         </div>
         <div className="flex flex-wrap gap-2">
           <button

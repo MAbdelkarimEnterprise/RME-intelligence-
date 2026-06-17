@@ -23,6 +23,7 @@ type Ctx = {
   docs: DocumentItem[];
   addDocument: (d: DocumentItem) => void;
   removeDocument: (id: string) => void;
+  setDocumentText: (id: string, text: string) => void;
 };
 
 const DocumentsContext = createContext<Ctx | null>(null);
@@ -83,6 +84,14 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const setDocumentText = useCallback((id: string, text: string) => {
+    setUploaded((prev) => {
+      const next = prev.map((d) => (d.id === id ? { ...d, text } : d));
+      persist(next);
+      return next;
+    });
+  }, []);
+
   const removeDocument = useCallback((id: string) => {
     setUploaded((prev) => {
       const next = prev.filter((x) => x.id !== id);
@@ -95,7 +104,7 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
   const docs = [...uploaded, ...seed];
 
   return (
-    <DocumentsContext.Provider value={{ docs, addDocument, removeDocument }}>
+    <DocumentsContext.Provider value={{ docs, addDocument, removeDocument, setDocumentText }}>
       {children}
     </DocumentsContext.Provider>
   );

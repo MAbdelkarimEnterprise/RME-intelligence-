@@ -13,10 +13,11 @@ import { ExecSummary } from "./exec-summary";
 import { Comparison } from "./comparison";
 import { Conflicts } from "./conflicts";
 import { WorkPackagesView } from "./work-packages";
-import { BoqAnalysisContext } from "./analysis-context";
+import { BoqAnalysisContext, BoqConflictsContext } from "./analysis-context";
 import { execSummary } from "@/lib/boq-data";
 import { cn } from "@/lib/utils";
 import type { BoqAnalysis } from "@/lib/boq/analyze";
+import type { Conflict } from "@/lib/boq-types";
 
 type Tab = "summary" | "comparison" | "conflicts" | "packages";
 
@@ -30,12 +31,16 @@ const tabs: { key: Tab; label: string; icon: typeof Boxes; badge?: string }[] = 
 export function BoqWorkspace() {
   const [analyzed, setAnalyzed] = useState(false);
   const [analysis, setAnalysis] = useState<BoqAnalysis | null>(null);
+  const [conflictList, setConflictList] = useState<Conflict[] | null>(null);
   const [tab, setTab] = useState<Tab>("summary");
 
-  const conflictCount = analysis ? 0 : execSummary.conflicts;
+  const conflictCount = analysis
+    ? conflictList?.length ?? 0
+    : execSummary.conflicts;
 
   return (
     <BoqAnalysisContext.Provider value={analysis}>
+    <BoqConflictsContext.Provider value={conflictList}>
     <div className="min-h-full bg-navy-900 text-white">
       {/* top bar */}
       <div className="sticky top-0 z-20 border-b border-white/10 bg-navy-900/90 backdrop-blur">
@@ -104,8 +109,9 @@ export function BoqWorkspace() {
       <div className="px-6 py-7">
         {!analyzed ? (
           <Intake
-            onComplete={(a) => {
+            onComplete={(a, c) => {
               setAnalysis(a);
+              setConflictList(c);
               setAnalyzed(true);
             }}
           />
@@ -125,6 +131,7 @@ export function BoqWorkspace() {
         )}
       </div>
     </div>
+    </BoqConflictsContext.Provider>
     </BoqAnalysisContext.Provider>
   );
 }

@@ -16,7 +16,7 @@ export default function DocumentsPage() {
   const [query, setQuery] = useState("");
   const [view, setView] = useState<"grid" | "list">("list");
   const [project, setProject] = useState<string>("all");
-  const { docs, addDocument } = useDocumentsStore();
+  const { docs, addDocument, setDocumentText } = useDocumentsStore();
 
   const filtered = docs.filter(
     (d) =>
@@ -38,7 +38,7 @@ export default function DocumentsPage() {
               PDF, DOCX, XLSX, PPTX, TXT.
             </p>
             <div className="mt-4">
-              <UploadDropzone onConfirm={(d) => addDocument(d)} />
+              <UploadDropzone onConfirm={(d) => addDocument(d)} onText={setDocumentText} />
             </div>
           </Card>
 

@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { DarkCard, SeverityBadge, DarkSelect } from "./ui";
 import { conflicts, workPackages, workPackageLabels } from "@/lib/boq-data";
-import { useBoqAnalysis } from "./analysis-context";
+import { useBoqAnalysis, useBoqConflicts } from "./analysis-context";
 import { exportWord, exportPDF } from "@/lib/export";
 import type { Conflict, Severity } from "@/lib/boq-types";
 import { cn } from "@/lib/utils";
@@ -19,30 +19,35 @@ const order: Record<Severity, number> = { High: 0, Medium: 1, Low: 2 };
 
 export function Conflicts() {
   const analysis = useBoqAnalysis();
+  const realConflicts = useBoqConflicts();
   const [sev, setSev] = useState<string>("all");
   const [wp, setWp] = useState<string>("all");
 
+  // Source of truth: on a real run use Claude's spec-vs-BOQ conflicts;
+  // in demo mode fall back to the sample dataset.
+  const base: Conflict[] = analysis ? realConflicts ?? [] : conflicts;
+
   const list = useMemo(
     () =>
-      conflicts
+      base
         .filter(
           (c) =>
             (sev === "all" || c.severity === sev) &&
             (wp === "all" || c.workPackage === wp)
         )
         .sort((a, b) => order[a.severity] - order[b.severity]),
-    [sev, wp]
+    [base, sev, wp]
   );
 
   const counts = useMemo(() => {
     const c: Record<string, number> = { High: 0, Medium: 0, Low: 0 };
-    conflicts.forEach((x) => (c[x.severity] += 1));
+    base.forEach((x) => (c[x.severity] += 1));
     return c;
-  }, []);
+  }, [base]);
 
-  // On a real run, spec-vs-BOQ conflict detection needs the Specifications
-  // PDF + Claude — wired in the next build step. Show an honest state.
-  if (analysis) {
+  // Real run, but no Specifications PDF was provided (or no API key) — be
+  // honest: BOQ numbers are live, spec conflict reading needs the spec PDF.
+  if (analysis && realConflicts === null) {
     return (
       <div className="mx-auto max-w-xl py-16 text-center">
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-white/5 text-amber-300">
@@ -54,8 +59,26 @@ export function Conflicts() {
         <p className="mx-auto mt-2 max-w-md text-sm text-white/55">
           Your BOQ numbers are live. To detect spec-vs-BOQ conflicts (e.g.
           “spec requires C40 but BOQ says C35”), add a Specifications PDF on the
-          intake screen — the Claude-powered conflict reader is the next step
-          now that your API key is set.
+          intake screen and re-run — Claude reads the spec and cross-checks it
+          against every BOQ line item.
+        </p>
+      </div>
+    );
+  }
+
+  // Real run with a spec PDF but Claude found no conflicts.
+  if (analysis && realConflicts && realConflicts.length === 0) {
+    return (
+      <div className="mx-auto max-w-xl py-16 text-center">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-white/5 text-emerald-300">
+          <AlertTriangle className="h-6 w-6" />
+        </div>
+        <h2 className="mt-4 text-lg font-semibold text-white">
+          No specification conflicts found
+        </h2>
+        <p className="mx-auto mt-2 max-w-md text-sm text-white/55">
+          Claude cross-checked your Specifications PDF against every BOQ line
+          item and found no material, grade, standard or coverage conflicts.
         </p>
       </div>
     );
@@ -84,7 +107,7 @@ export function Conflicts() {
             Conflict Intelligence
           </h2>
           <p className="text-sm text-white/50">
-            Cross-referenced specifications, BOQs and scope — {conflicts.length}{" "}
+            Cross-referenced specifications, BOQs and scope — {base.length}{" "}
             inconsistencies detected.
           </p>
         </div>

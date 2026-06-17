@@ -268,7 +268,7 @@ export default function LandingPage() {
       <section id="systems" className="bg-background py-16">
         <div className="container text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-            Complements ROWAD's digital ecosystem
+            Complements ROWAD&apos;s digital ecosystem
           </p>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
             {trustedSystems.map((s) => (
@@ -291,7 +291,7 @@ export default function LandingPage() {
                 Put your organizational knowledge to work
               </h2>
               <p className="mx-auto mt-4 max-w-lg text-white/65">
-                Launch the platform and start building ROWAD's engineering
+                Launch the platform and start building ROWAD&apos;s engineering
                 memory today.
               </p>
               <Link href="/login" className="mt-8 inline-block">

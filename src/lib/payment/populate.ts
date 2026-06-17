@@ -87,7 +87,11 @@ export async function populateUnifierTemplate(
     if (!m.template) continue;
     const t = m.template;
     const e = m.extracted;
-    const currentAmount = e ? Math.round(e.currentQuantity * t.unitCost) : 0;
+    const currentAmount = e
+      ? e.currentAmount && e.currentAmount > 0
+        ? Math.round(e.currentAmount)
+        : Math.round(e.currentQuantity * t.unitCost)
+      : 0;
 
     set(r, 0, "D");
     set(r, 1, "Line Items");

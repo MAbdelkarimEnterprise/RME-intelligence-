@@ -36,7 +36,7 @@ export default function RecoverPage() {
                 Reset your password
               </h1>
               <p className="mt-1.5 text-sm text-muted-foreground">
-                Enter your work email and we'll send a secure recovery link.
+                Enter your work email and we&apos;ll send a secure recovery link.
               </p>
               <form
                 onSubmit={(e) => {

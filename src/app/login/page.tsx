@@ -48,7 +48,7 @@ export default function LoginPage() {
               <span className="text-accent-glow">Instantly Accessible.</span>
             </h2>
             <p className="mt-4 leading-relaxed text-white/60">
-              Sign in to access ROWAD's organizational knowledge base — project
+              Sign in to access ROWAD&apos;s organizational knowledge base — project
               schedules, BOQs, quality records and contracts — with grounded,
               cited answers from Claude.
             </p>

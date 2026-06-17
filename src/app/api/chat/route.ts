@@ -17,6 +17,7 @@ interface ChatRequest {
   scope?: string;
   projectId?: string;
   history?: ChatTurn[];
+  documents?: { name: string; text: string }[];
 }
 
 export async function POST(req: Request) {
@@ -27,7 +28,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { message, scope = "the knowledge base", projectId, history = [] } =
+  const { message, scope = "the knowledge base", projectId, history = [], documents = [] } =
     body;
   if (!message?.trim()) {
     return NextResponse.json({ error: "Empty message" }, { status: 400 });
@@ -52,6 +53,23 @@ export async function POST(req: Request) {
       context = built.context;
       citations = built.citations;
       confidence = built.confidence;
+    } else if (documents.length) {
+      // Context-grounding (no vector DB): inject the uploaded document text.
+      const budget = 120000; // ~chars across all docs
+      let used = 0;
+      const blocks: string[] = [];
+      for (const d of documents) {
+        if (!d.text) continue;
+        const slice = d.text.slice(0, Math.max(0, budget - used));
+        if (!slice) break;
+        used += slice.length;
+        blocks.push(`=== DOCUMENT: ${d.name} ===\n${slice}`);
+      }
+      context = blocks.join("\n\n");
+      citations = documents
+        .filter((d) => d.text)
+        .map((d) => ({ documentId: d.name, documentName: d.name, snippet: "" }));
+      confidence = blocks.length ? 0.9 : 0;
     }
 
     const client = getClient();

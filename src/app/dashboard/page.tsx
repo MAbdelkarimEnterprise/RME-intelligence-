@@ -12,6 +12,7 @@ import {
 import { Topbar } from "@/components/app/topbar";
 import { Card } from "@/components/ui/primitives";
 import { Badge } from "@/components/ui/primitives";
+import ShaderBackground from "@/components/ui/shader-background";
 import { FileIcon } from "@/components/ui/file-icon";
 import {
   stats,
@@ -61,46 +62,53 @@ export default function DashboardHome() {
     <>
       <Topbar title="Home" />
       <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-7xl px-6 py-7">
-          {/* Greeting */}
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">
-                Welcome back, {currentUser.name.split(" ")[0]}
-              </p>
-              <h2 className="mt-1 text-2xl font-bold tracking-tight text-navy-900">
-                Engineering Intelligence Overview
-              </h2>
+        {/* Shader hero band — greeting + KPIs */}
+        <div className="relative overflow-hidden border-b border-border bg-navy-950 pb-8 pt-7">
+          <ShaderBackground />
+          <div className="relative z-10 mx-auto max-w-7xl px-6">
+            {/* Greeting */}
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-sm text-navy-300">
+                  Welcome back, {currentUser.name.split(" ")[0]}
+                </p>
+                <h2 className="mt-1 text-2xl font-bold tracking-tight text-white">
+                  Engineering Intelligence Overview
+                </h2>
+              </div>
+              <Link
+                href="/dashboard/assistant"
+                className="inline-flex items-center gap-2 self-start rounded-md bg-white/10 px-4 py-2.5 text-sm font-medium text-white shadow-sm backdrop-blur-sm transition-colors hover:bg-white/20 sm:self-auto"
+              >
+                <Sparkles className="h-4 w-4" />
+                Ask the assistant
+              </Link>
             </div>
-            <Link
-              href="/dashboard/assistant"
-              className="inline-flex items-center gap-2 self-start rounded-md bg-navy-800 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-navy-700 sm:self-auto"
-            >
-              <Sparkles className="h-4 w-4" />
-              Ask the assistant
-            </Link>
-          </div>
 
-          {/* KPIs */}
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {kpis.map(({ label, value, delta, icon: Icon }) => (
-              <Card key={label} className="p-5">
-                <div className="flex items-start justify-between">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-navy-50 text-navy-700">
-                    <Icon className="h-5 w-5" strokeWidth={1.8} />
+            {/* KPIs */}
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {kpis.map(({ label, value, delta, icon: Icon }) => (
+                <div key={label} className="rounded-xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
+                  <div className="flex items-start justify-between">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/10 text-navy-200">
+                      <Icon className="h-5 w-5" strokeWidth={1.8} />
+                    </div>
+                    <ArrowUpRight className="h-4 w-4 text-navy-400" />
                   </div>
-                  <ArrowUpRight className="h-4 w-4 text-graphite-300" />
+                  <div className="mt-4 text-2xl font-bold tracking-tight text-white">
+                    {value}
+                  </div>
+                  <div className="mt-1 text-xs text-navy-300">{label}</div>
+                  <div className="mt-2 text-[11px] font-medium text-emerald-400">
+                    {delta}
+                  </div>
                 </div>
-                <div className="mt-4 text-2xl font-bold tracking-tight text-navy-900">
-                  {value}
-                </div>
-                <div className="mt-1 text-xs text-muted-foreground">{label}</div>
-                <div className="mt-2 text-[11px] font-medium text-emerald-600">
-                  {delta}
-                </div>
-              </Card>
-            ))}
+              ))}
+            </div>
           </div>
+        </div>
+
+        <div className="mx-auto max-w-7xl px-6 py-7">
 
           <div className="mt-6 grid gap-6 lg:grid-cols-3">
             {/* Recent documents */}

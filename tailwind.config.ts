@@ -42,12 +42,17 @@ const config: Config = {
           DEFAULT: "#5c6e88",
           light: "#8a99ad",
         },
-        // ROWAD brand red.
+        // Engineering accent — safety orange (primary action / highlight).
         accent: {
-          DEFAULT: "#C8102E",
-          hover: "#a40d26",
-          soft: "#fbe3e7",
-          glow: "#e11d3c",
+          DEFAULT: "#E8531A",
+          hover: "#cf4715",
+          soft: "#fcebe3",
+          glow: "#ff6a33",
+        },
+        // Construction yellow — used sparingly for emphasis / caution.
+        construction: {
+          DEFAULT: "#E8A400",
+          soft: "#fbf0d5",
         },
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
@@ -64,12 +69,19 @@ const config: Config = {
       },
       fontFamily: {
         sans: ["var(--font-inter)", "ui-sans-serif", "system-ui", "sans-serif"],
-        mono: ["ui-monospace", "SFMono-Regular", "monospace"],
+        heading: [
+          "var(--font-plex)",
+          "var(--font-inter)",
+          "ui-sans-serif",
+          "system-ui",
+          "sans-serif",
+        ],
+        mono: ["var(--font-plex-mono)", "ui-monospace", "SFMono-Regular", "monospace"],
       },
       boxShadow: {
         card: "0 1px 2px rgba(12,20,36,0.04), 0 10px 30px -16px rgba(12,20,36,0.18)",
         elevated: "0 20px 50px -16px rgba(12,20,36,0.28)",
-        glow: "0 0 0 1px rgba(200,16,46,0.35), 0 10px 40px -10px rgba(200,16,46,0.45)",
+        glow: "0 0 0 1px rgba(232,83,26,0.35), 0 10px 40px -10px rgba(232,83,26,0.45)",
         "inset-hair": "inset 0 1px 0 0 rgba(255,255,255,0.06)",
       },
       keyframes: {

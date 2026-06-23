@@ -12,7 +12,7 @@ export default function DashboardLayout({
         <div className="hidden lg:block">
           <Sidebar />
         </div>
-        <div className="flex min-w-0 flex-1 flex-col">{children}</div>
+        <div className="app-surface flex min-w-0 flex-1 flex-col">{children}</div>
       </div>
     </DocumentsProvider>
   );

@@ -1,20 +1,33 @@
 import type { Metadata } from "next";
-import { Inter, Geist } from "next/font/google";
+import { Inter, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
-
+// Body — Inter (variable). Headings — IBM Plex Sans. Numerics — IBM Plex Mono.
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
   display: "swap",
 });
 
+const plexSans = IBM_Plex_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-plex",
+  display: "swap",
+});
+
+const plexMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["500", "600"],
+  variable: "--font-plex-mono",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "RME · Engineering Intelligence Platform",
+  title: "RME Intelligence · Engineering Intelligence for Modern Construction",
   description:
-    "Rowad Modern Engineering's internal AI knowledge platform. Upload documents, analyze projects, and interact with organizational knowledge through Claude.",
+    "Transform project documents, BOQs, specifications, payment applications and technical submissions into structured, actionable intelligence — engineering-grade accuracy for commercial, planning and technical office teams.",
 };
 
 export default function RootLayout({
@@ -23,7 +36,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={cn("font-sans", geist.variable)}>
+    <html
+      lang="en"
+      className={cn(inter.variable, plexSans.variable, plexMono.variable)}
+    >
       <body className="font-sans antialiased" suppressHydrationWarning>
         {children}
       </body>
